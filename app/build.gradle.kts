@@ -1,4 +1,6 @@
+
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -9,8 +11,21 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-val tmdbApiKey: String = gradleLocalProperties(rootDir, providers).getProperty("TMDB_API_KEY")
-val omdbApiKey: String = gradleLocalProperties(rootDir, providers).getProperty("OMDB_API_KEY")
+/**
+ * API KEYS
+ * - Local: local.properties
+ * - CI: GitHub Secrets (ENV)
+ */
+val localProps = gradleLocalProperties(rootDir, providers)
+
+fun getApiKey(name: String): String {
+    return System.getenv(name)
+        ?: localProps.getProperty(name)
+        ?: throw GradleException("$name is missing. Add it to local.properties or GitHub Secrets.")
+}
+
+val tmdbApiKey = getApiKey("TMDB_API_KEY")
+val omdbApiKey = getApiKey("OMDB_API_KEY")
 
 android {
     namespace = "zechs.zplex"
@@ -23,8 +38,8 @@ android {
         versionCode = 22
         versionName = "4.0.0"
 
-        buildConfigField("String", "TMDB_API_KEY", "\"${tmdbApiKey}\"")
-        buildConfigField("String", "OMDB_API_KEY", "\"${omdbApiKey}\"")
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
+        buildConfigField("String", "OMDB_API_KEY", "\"$omdbApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -74,7 +89,6 @@ android {
             isUniversalApk = false
         }
     }
-
 }
 
 dependencies {
@@ -89,7 +103,7 @@ dependencies {
         )
     )
 
-    // --- Version Variables ---
+    // --- Versions ---
     val appCompatVersion = "1.7.1"
     val coilVersion = "2.7.0"
     val constraintLayoutVersion = "2.2.1"
@@ -116,10 +130,7 @@ dependencies {
     val workVersion = "2.10.3"
     val mediaVersion = "1.7.1"
 
-    // Media Session
     implementation("androidx.media:media:$mediaVersion")
-
-    // --- AndroidX Core ---
     implementation("androidx.core:core-ktx:$kotlinCoreVersion")
     implementation("androidx.appcompat:appcompat:$appCompatVersion")
     implementation("androidx.constraintlayout:constraintlayout:$constraintLayoutVersion")
@@ -127,17 +138,14 @@ dependencies {
     implementation("androidx.palette:palette-ktx:$paletteVersion")
     implementation("androidx.activity:activity-ktx:$androidXActivity")
 
-    // --- Kotlin Coroutines ---
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
 
-    // --- Dependency Injection (Hilt) ---
     implementation("com.google.dagger:hilt-android:$hiltVersion")
     ksp("com.google.dagger:hilt-compiler:$hiltVersion")
     implementation("androidx.hilt:hilt-common:$hiltExtVersion")
     implementation("androidx.hilt:hilt-navigation-fragment:$hiltExtVersion")
     implementation("androidx.hilt:hilt-work:$hiltExtVersion")
 
-    // --- Networking ---
     implementation(platform("com.squareup.okhttp3:okhttp-bom:$okhttpVersion"))
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
@@ -146,39 +154,31 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:$retrofitVersion")
     implementation("com.squareup.retrofit2:converter-scalars:$retrofitVersion")
 
-    // --- JSON Parsing ---
     implementation("com.squareup.moshi:moshi:$moshiVersion")
     implementation("com.squareup.moshi:moshi-kotlin:$moshiVersion")
     ksp("com.squareup.moshi:moshi-kotlin-codegen:$moshiVersion")
     implementation("com.google.code.gson:gson:$gsonVersion")
 
-    // --- Image Loading ---
     implementation("com.github.bumptech.glide:glide:$glideVersion")
     implementation("com.github.bumptech.glide:okhttp3-integration:$glideVersion")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
     implementation("io.coil-kt:coil:$coilVersion")
 
-    // --- Persistence ---
     implementation("androidx.datastore:datastore-preferences:$datastoreVersion")
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
-    // --- Lifecycle & Navigation ---
     implementation("androidx.lifecycle:lifecycle-service:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
     implementation("androidx.navigation:navigation-fragment-ktx:$navigationVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navigationVersion")
 
-    // --- WorkManager ---
     implementation("androidx.work:work-runtime-ktx:$workVersion")
 
-    // --- Renderscript Replacement ---
-    //noinspection Aligned16KB
     implementation("com.github.android:renderscript-intrinsics-replacement-toolkit:$renderscriptToolkitVersion")
 
-    // --- Testing ---
     testImplementation("junit:junit:$junitVersion")
     androidTestImplementation("androidx.test.ext:junit:$testExtJunitVersion")
     androidTestImplementation("androidx.test.espresso:espresso-core:$espressoVersion")
